@@ -6,11 +6,10 @@ import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
-
+import net.minecraft.server.*;
 import com.google.gson.Gson;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import me.lucko.fabric.api.permissions.v0.Permissions;  // ✅ Fabric Permissions API
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,6 +28,9 @@ import java.util.concurrent.TimeoutException;
 import org.minecralogy.qqbot.websocket.Listener;
 import org.minecralogy.qqbot.websocket.Sender;
 import java.util.stream.Collectors;
+import me.lucko.fabric.api.permissions.v0.Permissions;
+
+
 
 public class QQBotCommand {
     private static final Path CONFIG_PATH = Paths.get("config/qq_bot.json");
@@ -39,9 +41,7 @@ public class QQBotCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("qqbot")
-                // ✅ 使用 Fabric Permissions API 检查权限
-                // 参数：权限节点字符串，默认权限级别（2=管理员）
-                .requires(source -> Permissions.check(source, "qqbot.command", 2))
+                .requires(source -> hasPermission(source, 2))
                 .executes(QQBotCommand::showInfo)
                 .then(literal("reconnect")
                         .executes(QQBotCommand::reconnect)
@@ -76,17 +76,14 @@ public class QQBotCommand {
                 )
         );
     }
-
-    // ✅ 使用 Fabric Permissions API 进行权限检查
-    // 可以为不同子命令设置不同的权限节点
     private static boolean hasPermission(CommandSourceStack source, int level) {
-        return Permissions.check(source, "qqbot.command", level);
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            return true; // 控制台直接放行
+        }
+        return source.getServer().getPlayerList().isOp(player.nameAndId());
     }
 
-    // 也可以为特定子命令设置更细粒度的权限
-    private static boolean hasPermission(CommandSourceStack source, String permissionNode, int level) {
-        return Permissions.check(source, permissionNode, level);
-    }
 
     private static int updateConfigDirectly(CommandContext<CommandSourceStack> context, String key) {
         CommandSourceStack source = context.getSource();

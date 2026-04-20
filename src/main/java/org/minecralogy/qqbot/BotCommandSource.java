@@ -102,10 +102,9 @@ public class BotCommandSource extends CommandSourceStack {
         MutableComponent mutableComponent = Component.translatable("chat.type.admin",
                 this.getDisplayName(), message).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
 
-        // ✅ 简化：直接发送给所有有权限的玩家，不检查 GameRules
         for (ServerPlayer serverPlayer : this.getServer().getPlayerList().getPlayers()) {
             if (serverPlayer != this.getOutput() &&
-                    Permissions.check(serverPlayer, "minecraft.admin.command_feedback", 2)) {
+                    this.getServer().getPlayerList().isOp(serverPlayer.nameAndId())) {
                 serverPlayer.sendSystemMessage(mutableComponent);
             }
         }
@@ -114,7 +113,6 @@ public class BotCommandSource extends CommandSourceStack {
             this.getServer().sendSystemMessage(mutableComponent);
         }
     }
-
     public CommandSource getOutput() {
         return commandOutput;
     }
